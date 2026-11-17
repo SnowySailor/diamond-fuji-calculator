@@ -1,0 +1,23 @@
+services:
+  # Dev server with hot reload: docker compose up app  ->  http://127.0.0.1:4778
+  app:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "127.0.0.1:4778:4778"
+    volumes:
+      - .:/app
+      # Keep node_modules inside the container so nothing lands on the host.
+      - /app/node_modules
+
+  # Static production build served by nginx: docker compose --profile prod up --build prod
+  prod:
+    profiles: ["prod"]
+    build:
+      context: .
+      target: prod
+      args:
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
+    ports:
+      - "127.0.0.1:4778:80"
