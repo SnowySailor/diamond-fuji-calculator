@@ -120,6 +120,15 @@ describe('silhouette', () => {
     expect(lineOfSight(TOKYO_STATION, t, [mid]).clear).toBe(false);
     expect(lineOfSight(TOKYO_STATION, t, [{ ...mid, elev: 100 }]).clear).toBe(true);
   });
+
+  it("doesn't treat Fuji's own near crater rim as an obstruction", () => {
+    // Panorama-dai, 17.5 km out: Google terrain has the near rim (3689 m) ~500 m in
+    // front of Kengamine, appearing above it. That's the summit, not a blocker.
+    const pano: Place = { lat: 35.4126, lng: 138.9095, elev: 1094.6 };
+    const t = summitTarget(pano);
+    const rim = { lat: 35.36257, lng: 138.73225, elev: 3689 };
+    expect(lineOfSight(pano, t, [rim]).clear).toBe(true);
+  });
 });
 
 it('prints a sample for eyeballing', () => {

@@ -89,6 +89,7 @@ export default function App() {
     if (!mapsReady) return;
     let cancelled = false;
     const useLookup = !(firstRun && skipFirstGround);
+    const moved = !firstRun;
     setFirstRun(false);
     if (useLookup) setGroundSource('loading');
     setTerrainStatus('loading');
@@ -101,7 +102,11 @@ export default function App() {
           setGroundSource('google');
         } else {
           setGroundSource('manual');
-          setElevationNote(elevationUnavailableReason() ? 'Elevation API unavailable: enter it yourself' : 'Lookup failed: enter it yourself');
+          // Say plainly that the number shown belongs to the previous spot.
+          setElevationNote(
+            (elevationUnavailableReason() ? 'Elevation API refused. ' : 'Lookup failed. ') +
+              (moved ? 'Still showing the previous spot’s value, so enter yours.' : 'Enter it yourself.'),
+          );
         }
       }
       const samples = await terrainSamples(observer, summitTarget({ ...observer, elev: 0 }));

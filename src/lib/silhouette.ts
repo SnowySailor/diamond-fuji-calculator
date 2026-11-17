@@ -101,6 +101,9 @@ export function modelSilhouette(obs: Place, target: Target, summit: Place = FUJI
   return skyline(lines);
 }
 
+/** Radius around Kengamine treated as "the summit" (covers the ~800 m crater). */
+export const SUMMIT_ZONE_M = 1200;
+
 export interface LineOfSight {
   clear: boolean;
   /** Summit altitude minus the highest obstruction's altitude, degrees. */
@@ -110,14 +113,16 @@ export interface LineOfSight {
 
 /**
  * Whether terrain sampled along the observer→summit path hides the summit.
- * Ignores the first 300 m (the observer's own ground) and the last 500 m (the summit).
+ * Ignores the first 300 m (the observer's own ground) and the last 1.2 km: that is
+ * Fuji's own crater, whose near rim can stand higher than Kengamine from close
+ * range. That rim is where the sun actually sits, so it isn't an obstruction.
  */
 export function lineOfSight(obs: Place, target: Target, samples: Place[]): LineOfSight {
   let maxAlt = -Infinity;
   let worst: LineOfSight['worst'];
   for (const s of samples) {
     const p = pointAzAlt(obs, s);
-    if (p.distance < 300 || target.distance - p.distance < 500) continue;
+    if (p.distance < 300 || target.distance - p.distance < SUMMIT_ZONE_M) continue;
     if (p.alt > maxAlt) {
       maxAlt = p.alt;
       worst = { ...s, distanceKm: p.distance / 1000 };

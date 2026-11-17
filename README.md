@@ -17,7 +17,7 @@ Everything runs in Docker; nothing is installed on the host.
 
 **Close range:** from Panorama-dai at Lake Yamanaka, 17 km away, the crater's near rim stands higher in the sky than Kengamine itself. The crosshair marks Kengamine, hidden behind the rim.
 
-These screenshots use the modelled ridge. With the Elevation API enabled, the app draws the real one.
+The screenshots draw Fuji's ridge from Google terrain data (Elevation API enabled). Without the Elevation API, the app draws a modelled cone instead.
 
 ## Run
 

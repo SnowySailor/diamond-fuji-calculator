@@ -68,7 +68,13 @@ function NumberField(props: {
 export function Controls(p: Props) {
   const losText = (() => {
     if (p.terrainStatus === 'loading') return <span className="muted">Checking terrain…</span>;
-    if (!p.los) return <span className="muted">Not checked (needs the Elevation API)</span>;
+    if (!p.los)
+      return (
+        <span className="muted">
+          Not checked. The key isn’t allowed to call the Elevation API (Cloud console → Credentials → this key → API
+          restrictions).
+        </span>
+      );
     if (p.los.clear)
       return (
         <span className="ok">
@@ -105,7 +111,15 @@ export function Controls(p: Props) {
           suffix="m"
           onCommit={p.onGround}
           hint={
-            p.groundSource === 'loading' ? 'Looking up…' : p.groundSource === 'google' ? 'From Google terrain' : p.elevationNote ?? 'Entered by you'
+            p.groundSource === 'loading' ? (
+              'Looking up…'
+            ) : p.groundSource === 'google' ? (
+              'From Google terrain'
+            ) : p.elevationNote ? (
+              <span className="warn">{p.elevationNote}</span>
+            ) : (
+              'Entered by you'
+            )
           }
         />
         <NumberField label="Eye height above ground" value={p.agl} digits={1} min={0} suffix="m" onCommit={p.onAgl} hint="Add floors or a tripod here" />
