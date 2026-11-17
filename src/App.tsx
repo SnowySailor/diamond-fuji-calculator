@@ -6,8 +6,9 @@ import { ResultsTable, filterForBody } from './components/ResultsTable';
 import { YearChart } from './components/YearChart';
 import type { LatLng, Place } from './lib/constants';
 import type { BodyName } from './lib/astro';
-import { computeYear, seasons, summitTarget, type Alignment } from './lib/events';
-import { lineOfSight, modelSilhouette, projectPlaces, skyline } from './lib/silhouette';
+import { computeYear, seasons, type Alignment } from './lib/events';
+import { aimTarget } from './lib/sky';
+import { lineOfSight, modelSilhouette, projectPlaces, settleTarget, skyline } from './lib/silhouette';
 import { elevationUnavailableReason, groundElevation, terrainSamples, type TerrainSamples } from './maps/elevation';
 
 interface UrlState {
@@ -109,7 +110,7 @@ export default function App() {
           );
         }
       }
-      const samples = await terrainSamples(observer, summitTarget({ ...observer, elev: 0 }));
+      const samples = await terrainSamples(observer, aimTarget({ ...observer, elev: 0 }));
       if (cancelled) return;
       setTerrain(samples);
       setTerrainStatus(samples ? 'ok' : 'unavailable');
@@ -132,8 +133,20 @@ export default function App() {
     return () => clearTimeout(t);
   }, [mapsReady]);
 
-  const target = useMemo(() => summitTarget(deferredPlace), [deferredPlace]);
-  const result = useMemo(() => computeYear(deferredPlace, year, body), [deferredPlace, year, body]);
+  // Aim at the middle of the summit, then settle the target's height onto the
+  // skyline in that direction (real terrain when we have it, else the model).
+  const aim = useMemo(() => aimTarget(deferredPlace), [deferredPlace]);
+  const modelSky = useMemo(() => modelSilhouette(deferredPlace, aim), [deferredPlace, aim]);
+  const terrainSky = useMemo(
+    () => (terrain ? skyline(terrain.ridge.map((line) => projectPlaces(deferredPlace, aim, line))) : null),
+    [terrain, deferredPlace, aim],
+  );
+  const ridgeSource: 'terrain' | 'model' = terrainSky && terrainSky.length > 50 ? 'terrain' : 'model';
+  const { target, sky } = useMemo(
+    () => settleTarget(aim, ridgeSource === 'terrain' ? terrainSky! : modelSky),
+    [aim, ridgeSource, terrainSky, modelSky],
+  );
+  const result = useMemo(() => computeYear(deferredPlace, year, body, target), [deferredPlace, year, body, target]);
   const pool = useMemo(() => filterForBody(result, minIllum), [result, minIllum]);
 
   const selected = useMemo(() => {
@@ -148,11 +161,6 @@ export default function App() {
 
   const onSelect = useCallback((a: Alignment) => setSelectedKey(a.crossTime.getTime()), []);
 
-  const modelSky = useMemo(() => modelSilhouette(deferredPlace, target), [deferredPlace, target]);
-  const terrainSky = useMemo(
-    () => (terrain ? skyline(terrain.ridge.map((line) => projectPlaces(deferredPlace, target, line))) : null),
-    [terrain, deferredPlace, target],
-  );
   const los = useMemo(
     () => (terrain ? lineOfSight(deferredPlace, target, terrain.sightline) : null),
     [terrain, deferredPlace, target],
@@ -215,8 +223,8 @@ export default function App() {
               place={deferredPlace}
               target={target}
               event={selected}
-              silhouette={terrainSky && terrainSky.length > 50 ? terrainSky : modelSky}
-              ridgeSource={terrainSky && terrainSky.length > 50 ? 'terrain' : 'model'}
+              silhouette={sky}
+              ridgeSource={ridgeSource}
             />
           ) : (
             <div className="view placeholder">
@@ -245,7 +253,9 @@ export default function App() {
           </div>
 
           <p className="muted small foot">
-            Fuji’s position: Kengamine summit, 35.36083° N 138.72750° E, 3776.24 m (GSI). Sun and moon positions come from
+            The target is the middle of Fuji’s summit: the direction of the crater centre (大内院), at the height of
+            the visible ridge. Kengamine, the 3776 m high point (GSI), is on the crater’s south-west rim and is marked
+            separately. Sun and moon positions come from
             astronomy-engine, with refraction scaled for your elevation. The line of sight to the summit uses k = 0.13
             terrestrial refraction. Buildings, trees and the weather aren’t modelled. Real refraction near the horizon varies
             from day to day, so expect up to a minute either way.

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Place } from '../lib/constants';
+import { FUJI, type Place } from '../lib/constants';
 import { bodyPosition, moonPhase, type BodyName } from '../lib/astro';
-import { skyOffset, type Alignment, type Target } from '../lib/events';
-import { angularSeparation } from '../lib/geo';
-import type { SkyPoint } from '../lib/silhouette';
+import type { Alignment } from '../lib/events';
+import { skyOffset, type SkyPoint, type Target } from '../lib/sky';
+import { angularSeparation, pointAzAlt } from '../lib/geo';
+import { ridgeAt } from '../lib/silhouette';
 import { fmtArcmin, fmtDateLong, fmtTime } from '../format';
 
 interface Props {
@@ -27,21 +28,6 @@ function skyColors(sunAlt: number): [string, string, string] {
   if (sunAlt > -7) return ['#1d2850', '#6c5a83', '#d4805a'];
   if (sunAlt > -13) return ['#0e1633', '#26305a', '#4b4772'];
   return ['#060a1a', '#0c1430', '#18224a'];
-}
-
-/** Interpolated skyline height (deg) at sky x, or null outside the sampled range. */
-function ridgeAt(sky: SkyPoint[], x: number): number | null {
-  if (!sky.length || x < sky[0].x || x > sky[sky.length - 1].x) return null;
-  let lo = 0;
-  let hi = sky.length - 1;
-  while (hi - lo > 1) {
-    const mid = (lo + hi) >> 1;
-    if (sky[mid].x <= x) lo = mid;
-    else hi = mid;
-  }
-  const a = sky[lo];
-  const b = sky[hi];
-  return b.x === a.x ? a.y : a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x);
 }
 
 /** Bright-limb direction of the moon on screen (radians, SVG coords: x right, y down). */
@@ -143,9 +129,16 @@ export function AlignmentView({ place, target, event, silhouette, ridgeSource }:
       ? Math.min(1, visible / 0.08) * Math.min(1, (0.75 - visible) / 0.45)
       : 0;
 
-  // From close range the crater's near rim can stand above Kengamine itself.
-  const ridgeAtSummit = ridgeAt(silhouette, 0);
-  const summitHidden = ridgeAtSummit !== null && ridgeAtSummit > 0.01;
+  // Kengamine, the high point on the south-west rim; from close range the near
+  // rim can stand above it.
+  const ken = useMemo(() => skyOffset(pointAzAlt(place, FUJI), target), [place.lat, place.lng, place.elev, target]);
+  const ridgeAtKen = ridgeAt(silhouette, ken.x);
+  const kenHidden = ridgeAtKen !== null && ridgeAtKen > ken.y + 0.005;
+  // Terrain data rounds the peak off a little; sit the marker on the drawn ridge.
+  const kenY = ridgeAtKen !== null && !kenHidden ? Math.min(ken.y, ridgeAtKen) : ken.y;
+  const kenOnLeft = ken.x < 0;
+  // Label outward from the centre, unless that would run off the edge.
+  const kenLabelLeft = kenOnLeft ? X(ken.x) > 280 : X(ken.x) > W - 280;
 
   const [skyTop, skyMid, skyLow] = skyColors(sun.alt);
   const horizonY = Y(-target.alt);
@@ -166,7 +159,7 @@ export function AlignmentView({ place, target, event, silhouette, ridgeSource }:
           </h2>
           <p className="muted">
             Best at <strong>{fmtTime(event.bestTime, true)}</strong> JST, centre passes{' '}
-            {fmtArcmin(event.missDeg)} from the summit ({event.direction === 'setting' ? 'sets' : 'rises'}{' '}
+            {fmtArcmin(event.missDeg)} from the summit centre ({event.direction === 'setting' ? 'sets' : 'rises'}{' '}
             {event.offsetDeg > 0 ? 'right' : 'left'} of it by {fmtArcmin(Math.abs(event.offsetDeg))} at summit height)
           </p>
         </div>
@@ -256,13 +249,23 @@ export function AlignmentView({ place, target, event, silhouette, ridgeSource }:
           );
         })}
 
-        {/* Summit marker. */}
+        {/* Kengamine (highest point) and the summit centre (the target). */}
+        {Math.abs(ken.x) <= halfW * 1.1 && (
+          <g className="ken" transform={`translate(${X(ken.x)} ${Y(kenY)})`}>
+            <path d="M -5 4 L 0 -5 L 5 4 Z" />
+            <text x={kenLabelLeft ? -9 : 9} y={20} textAnchor={kenLabelLeft ? 'end' : 'start'}>
+              剣ヶ峰 3776 m{kenHidden ? ' (hidden by the near rim)' : ''}
+            </text>
+          </g>
+        )}
         <g className="summit" transform={`translate(${X(0)} ${Y(0)})`}>
           <line x1={-9} x2={-3} y1={0} y2={0} />
           <line x1={3} x2={9} y1={0} y2={0} />
           <line x1={0} x2={0} y1={-9} y2={-3} />
           <line x1={0} x2={0} y1={3} y2={9} />
-          <text x={12} y={18}>剣ヶ峰 3776 m{summitHidden ? ' (behind the near rim)' : ''}</text>
+          <text x={kenOnLeft ? 10 : -10} y={24} textAnchor={kenOnLeft ? 'start' : 'end'}>
+            summit centre
+          </text>
         </g>
 
         {/* Scale bar. */}
@@ -318,13 +321,13 @@ export function AlignmentView({ place, target, event, silhouette, ridgeSource }:
           </dd>
         </div>
         <div>
-          <dt>From summit</dt>
+          <dt>From summit centre</dt>
           <dd>
             {fmtSigned(off.x)} horiz, {fmtSigned(off.y)} vert
           </dd>
         </div>
         <div>
-          <dt>Centre ↔ summit</dt>
+          <dt>Disk centre ↔ summit centre</dt>
           <dd>
             {fmtArcmin(sep)} <span className="muted">(disk radius {fmtArcmin(pos.semidiameter)})</span>
           </dd>

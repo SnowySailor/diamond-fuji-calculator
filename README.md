@@ -15,7 +15,7 @@ Everything runs in Docker; nothing is installed on the host.
 
 ![From Panorama-dai at Lake Yamanaka, 17 km away, the crater's near rim hides Kengamine](docs/screenshots/yamanaka-close-range.png)
 
-**Close range:** from Panorama-dai at Lake Yamanaka, 17 km away, the crater's near rim stands higher in the sky than Kengamine itself. The crosshair marks Kengamine, hidden behind the rim.
+**Close range:** from Panorama-dai at Lake Yamanaka, 17 km away, the crater's near rim stands higher in the sky than Kengamine itself. The crosshair marks the middle of the summit, on the rim; the triangle marks Kengamine, hidden behind it.
 
 The screenshots draw Fuji's ridge from Google terrain data (Elevation API enabled). Without the Elevation API, the app draws a modelled cone instead.
 
@@ -46,7 +46,12 @@ docker compose --env-file .env.local --profile prod up --build prod   # nginx bu
 
 ## How it works (`src/lib`)
 
-- **Summit.** The target is Kengamine (剣ヶ峰): 35.36083° N 138.72750° E, 3776.24 m (GSI).
+- **What counts as "on the summit".** Diamond Fuji is the sun sitting in the *middle* of the summit (MLIT
+  Kanto: 頂上の真ん中). The target is the direction of the crater centre (大内院, 35.36354° N 138.73062° E),
+  at the height of the visible ridge in that direction. The ridge comes from Google terrain when available
+  and from a modelled crater otherwise. Kengamine (剣ヶ峰, 3776.24 m, GSI) is the high point on the
+  south-west rim, about 410 m from the centre, and is marked separately. From close or side-on viewpoints,
+  aiming at Kengamine instead would put the best day a day early or late.
 - **Where the summit appears.** Its direction and altitude come from WGS84 ECEF→ENU geometry, which
   includes Earth's curvature. Terrestrial refraction is added with k = 0.13.
 - **Sun and moon positions.** These are topocentric positions from
@@ -63,12 +68,16 @@ docker compose --env-file .env.local --profile prod up --build prod   # nginx bu
   - *Near miss*: within 1°.
 - **Checked against published data** (in `src/lib/lib.test.ts`):
   - NAOJ sunset times and azimuths for Tokyo: within 1 minute.
-  - MLIT Kanto's Diamond Fuji dates for Yokohama Ōsanbashi (Mar 9–10) and Den-en-chōfu (Feb 17–18).
-  - The Lake Yamanaka sequence, moving from Nagaike to Asahigaoka to Panorama-dai through February.
+  - Enoshima Ōhashi, around Apr 5 and Sep 7: both match exactly.
+  - Yokohama Ōsanbashi, Mar 9–10 (MLIT Kanto): matches.
+  - The Lake Yamanaka sequence through February, from Nagaike to Asahigaoka to Panorama-dai. Panorama-dai
+    lands on Feb 23, the published date, with terrain data.
+  - Den-en-chōfu (MLIT Kanto, Feb 17–18) comes out on Feb 15 at the station. MLIT's coordinates for that
+    neighbourhood were placed by eye.
 
 Not modelled: buildings, trees, weather, or the day-to-day variation in refraction near the horizon.
 Expect timing to be off by up to a minute either way.
 
 From close range (Lake Yamanaka, for example), the crater's near rim stands higher in the sky than
-Kengamine, which is behind it. The drawing shows this, and the sun disappears behind the near rim a few
-seconds earlier than the listed time.
+Kengamine, which is behind it. The target sits on that near rim, because that is where the sun actually
+touches the mountain.

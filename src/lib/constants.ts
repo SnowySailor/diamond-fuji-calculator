@@ -14,6 +14,19 @@ export interface Place extends LatLng {
  */
 export const FUJI: Place = { lat: 35.36083, lng: 138.7275, elev: 3776.24 };
 
+/**
+ * Centre of Fuji's summit crater (大内院, OpenStreetMap). Diamond Fuji is the sun
+ * sitting in the *middle* of the summit (MLIT Kanto's definition: 頂上の真ん中),
+ * and the crater centre is what projects to the middle of the flat top from any
+ * direction. Kengamine is on the south-west rim, ~410 m away, so aiming at it
+ * shifts the "best" day by up to a day from close or side-on viewpoints.
+ * `elev` is a typical rim height (the rim peaks run 3722–3776 m).
+ */
+export const FUJI_CENTER: Place = { lat: 35.36354, lng: 138.73062, elev: 3740 };
+
+/** Crater rim radius, metres (the crater is ~780 m across). */
+export const CRATER_RADIUS_M = 390;
+
 /** WGS84 ellipsoid. */
 export const WGS84_A = 6378137;
 export const WGS84_F = 1 / 298.257223563;

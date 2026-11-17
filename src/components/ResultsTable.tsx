@@ -71,7 +71,7 @@ export function ResultsTable({ result, year, minIllum, selected, onSelect }: Pro
             <tr>
               <th>Date</th>
               <th>Time JST</th>
-              <th title="Closest distance between the disk's centre and the summit">Miss</th>
+              <th title="Closest distance between the disk's centre and the middle of the summit">Miss</th>
               <th />
               {body === 'moon' && <th>Moon</th>}
             </tr>
@@ -109,8 +109,9 @@ export function ResultsTable({ result, year, minIllum, selected, onSelect }: Pro
         </table>
       ))}
       <p className="muted small">
-        {result.direction === 'setting' ? 'Setting' : 'Rising'} {body}. “On summit” means the summit point is inside the
-        disk; “dead centre” within 3′. Times are when the centre passes closest to the summit.
+        {result.direction === 'setting' ? 'Setting' : 'Rising'} {body}. “Miss” is measured to the middle of the summit
+        (the crater centre’s direction). “On summit” means that point is inside the disk; “dead centre” within 3′. Times
+        are when the disk’s centre passes closest to it.
       </p>
     </div>
   );

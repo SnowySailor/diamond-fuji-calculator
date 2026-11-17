@@ -393,6 +393,18 @@ select {
   stroke: rgb(0 0 0 / 0.4);
   stroke-width: 3px;
 }
+.scene .ken path {
+  fill: #ffffff;
+  stroke: rgb(0 0 0 / 0.45);
+  stroke-width: 1;
+}
+.scene .ken text {
+  fill: rgb(255 255 255 / 0.85);
+  font-size: 12px;
+  paint-order: stroke;
+  stroke: rgb(0 0 0 / 0.4);
+  stroke-width: 3px;
+}
 .scene .scalebar line {
   stroke: #fff;
   stroke-width: 1.5;

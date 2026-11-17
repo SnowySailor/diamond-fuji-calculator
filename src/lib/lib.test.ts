@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { FUJI, type Place } from './constants';
 import { inverse, pointAzAlt } from './geo';
 import { bodyPosition, searchAltitude, makeObserver } from './astro';
-import { computeYear, jstMidnight, seasons, summitTarget } from './events';
-import { lineOfSight, modelSilhouette } from './silhouette';
+import { computeYear, jstMidnight, seasons } from './events';
+import { defaultTarget, lineOfSight, modelSilhouette, ridgeAt, settleTarget } from './silhouette';
+import { aimTarget, skyOffset } from './sky';
 
 const TOKYO_STATION: Place = { lat: 35.6812, lng: 139.7671, elev: 3 };
 const fmtJst = (d: Date) =>
@@ -21,7 +22,7 @@ describe('geo', () => {
   });
 
   it('summit altitude from Tokyo is about +1.7° (curvature + refraction)', () => {
-    const t = summitTarget(TOKYO_STATION);
+    const t = defaultTarget(TOKYO_STATION);
     // atan(3773/100k)=2.16°, minus curvature 0.45°, plus refraction 0.06°.
     expect(t.alt).toBeGreaterThan(1.6);
     expect(t.alt).toBeLessThan(1.85);
@@ -60,7 +61,7 @@ function bestIn(place: Place, year: number, month: number) {
   return s[0].best;
 }
 
-describe('diamond fuji fixtures (published dates; ±2 days)', () => {
+describe('diamond fuji fixtures (published dates)', () => {
   const day = (iso: string) => Number(iso.slice(8, 10));
 
   it('Den-en-chōfu: sunset Feb 17–18 (MLIT Kanto, "周辺" with eyeballed coordinates)', () => {
@@ -74,7 +75,14 @@ describe('diamond fuji fixtures (published dates; ±2 days)', () => {
 
   it('Yokohama Ōsanbashi: sunset Mar 9–10 (MLIT Kanto)', () => {
     const b = bestIn({ lat: 35.4517, lng: 139.6478, elev: 10 }, 2026, 3);
-    expect(Math.abs(day(b.date) - 9.5)).toBeLessThanOrEqual(2);
+    expect([9, 10]).toContain(day(b.date));
+  });
+
+  it('Enoshima Ōhashi: sunset ~Apr 5 and ~Sep 7 (tabi-mag.jp list)', () => {
+    // Aiming at Kengamine instead of the middle of the summit gets these a day off.
+    const p: Place = { lat: 35.30436, lng: 139.48231, elev: 8 };
+    expect(Math.abs(day(bestIn(p, 2026, 4).date) - 5)).toBeLessThanOrEqual(1);
+    expect(Math.abs(day(bestIn(p, 2026, 9).date) - 7)).toBeLessThanOrEqual(1);
   });
 
   it('Yamanakako: Nagaike (early Feb) → Asahigaoka (Feb 20+) → Panorama-dai (~Feb 23)', () => {
@@ -106,26 +114,30 @@ describe('moon (Pearl Fuji)', () => {
 });
 
 describe('silhouette', () => {
-  it('model skyline peaks at the summit', () => {
-    const t = summitTarget(TOKYO_STATION);
-    const sky = modelSilhouette(TOKYO_STATION, t);
+  it('target sits on the model skyline, with Kengamine the high point left of centre from Tokyo', () => {
+    const aim = aimTarget(TOKYO_STATION);
+    const { target, sky } = settleTarget(aim, modelSilhouette(TOKYO_STATION, aim));
+    expect(Math.abs(ridgeAt(sky, 0)!)).toBeLessThan(1e-9);
     const top = sky.reduce((a, b) => (b.y > a.y ? b : a));
-    expect(Math.abs(top.x)).toBeLessThan(0.05);
-    expect(Math.abs(top.y)).toBeLessThan(0.02);
+    const ken = skyOffset(pointAzAlt(TOKYO_STATION, FUJI), target);
+    // From the east-north-east, the south-west rim (Kengamine) appears to the left.
+    expect(ken.x).toBeLessThan(-0.05);
+    expect(Math.abs(top.x - ken.x)).toBeLessThan(0.03);
+    expect(top.y).toBeGreaterThan(0);
   });
 
   it('line of sight flags a blocking ridge', () => {
-    const t = summitTarget(TOKYO_STATION);
+    const t = defaultTarget(TOKYO_STATION);
     const mid = { lat: 35.52, lng: 139.25, elev: 5000 };
     expect(lineOfSight(TOKYO_STATION, t, [mid]).clear).toBe(false);
     expect(lineOfSight(TOKYO_STATION, t, [{ ...mid, elev: 100 }]).clear).toBe(true);
   });
 
   it("doesn't treat Fuji's own near crater rim as an obstruction", () => {
-    // Panorama-dai, 17.5 km out: Google terrain has the near rim (3689 m) ~500 m in
-    // front of Kengamine, appearing above it. That's the summit, not a blocker.
+    // Panorama-dai, 17.5 km out: Google terrain has the near rim (3689 m) in front of
+    // Kengamine, appearing above it. That's the summit, not a blocker.
     const pano: Place = { lat: 35.4126, lng: 138.9095, elev: 1094.6 };
-    const t = summitTarget(pano);
+    const t = defaultTarget(pano);
     const rim = { lat: 35.36257, lng: 138.73225, elev: 3689 };
     expect(lineOfSight(pano, t, [rim]).clear).toBe(true);
   });

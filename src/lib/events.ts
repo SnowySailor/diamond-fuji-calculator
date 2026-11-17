@@ -1,5 +1,5 @@
-import { FUJI, JST_OFFSET_MS, type Place } from './constants';
-import { angularSeparation, inverse, pointAzAlt, wrap180 } from './geo';
+import { JST_OFFSET_MS, type Place } from './constants';
+import { angularSeparation } from './geo';
 import {
   bodyPosition,
   makeObserver,
@@ -9,22 +9,10 @@ import {
   type BodyName,
   type BodyPosition,
 } from './astro';
+import { skyOffset, type Target } from './sky';
+import { defaultTarget } from './silhouette';
 
-export interface Target {
-  /** Azimuth of the summit from the observer, degrees. */
-  az: number;
-  /** Apparent altitude of the summit, degrees (curvature + terrestrial refraction). */
-  alt: number;
-  geomAlt: number;
-  /** Geodesic ground distance to the summit, metres. */
-  distance: number;
-}
-
-export function summitTarget(obs: Place, summit: Place = FUJI): Target {
-  const p = pointAzAlt(obs, summit);
-  const { distance } = inverse(obs, summit);
-  return { az: p.az, alt: p.alt, geomAlt: p.geomAlt, distance };
-}
+export { skyOffset, type Target } from './sky';
 
 export type AlignmentKind = 'center' | 'disk' | 'near' | 'far';
 
@@ -104,14 +92,6 @@ function findRoot(f: (t: number) => number, t0: number): number | null {
   return (a + b) / 2;
 }
 
-/** Sky-plane offset (deg) of a body from the summit: x right, y up. */
-export function skyOffset(pos: { az: number; alt: number }, target: Target) {
-  return {
-    x: wrap180(pos.az - target.az) * Math.cos((target.alt * Math.PI) / 180),
-    y: pos.alt - target.alt,
-  };
-}
-
 export interface YearResult {
   target: Target;
   body: BodyName;
@@ -122,10 +102,15 @@ export interface YearResult {
 
 /**
  * Every time in `year` (JST) that the sun or moon crosses the summit's apparent
- * altitude on the summit's side of the sky, with how close it passes.
+ * altitude on the summit's side of the sky, with how close it passes to the
+ * middle of the summit. Pass `target` when terrain data has refined it.
  */
-export function computeYear(obs: Place, year: number, body: BodyName, summit: Place = FUJI): YearResult {
-  const target = summitTarget(obs, summit);
+export function computeYear(
+  obs: Place,
+  year: number,
+  body: BodyName,
+  target: Target = defaultTarget(obs),
+): YearResult {
   const direction: 'rising' | 'setting' = target.az < 180 ? 'rising' : 'setting';
   const dir = direction === 'rising' ? 1 : -1;
   const observer = makeObserver(obs);

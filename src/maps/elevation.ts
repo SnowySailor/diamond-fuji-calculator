@@ -1,6 +1,6 @@
 import type { LatLng, Place } from '../lib/constants';
-import { FUJI } from '../lib/constants';
-import type { Target } from '../lib/events';
+import { FUJI_CENTER } from '../lib/constants';
+import type { Target } from '../lib/sky';
 import { crossLines } from '../lib/silhouette';
 
 /**
@@ -73,23 +73,26 @@ export interface TerrainSamples {
 }
 
 /**
- * Terrain for the visualisation and line-of-sight check: 11 path requests.
- * Wide lines (±20 km) at 2 km spacing give the flanks; dense lines (±2.5 km)
- * across the crater give the summit's real shape.
+ * Terrain for the visualisation and line-of-sight check: 14 path requests.
+ * Wide lines (±20 km) at 2 km spacing give the flanks; dense lines (±2.5 km) at
+ * 150 m spacing across the crater, plus one along the line of sight through it,
+ * give the summit's real shape and the rim height in the middle.
  */
-export async function terrainSamples(obs: LatLng, target: Target): Promise<TerrainSamples | null> {
+export async function terrainSamples(obs: LatLng, aim: Target): Promise<TerrainSamples | null> {
   const k = 't:' + key(obs);
   if (cache.has(k)) return cache.get(k) as TerrainSamples;
   const svc = await getService();
   if (!svc) return null;
-  const wide = crossLines(target, [-4000, -2000, 0, 2000, 4000], 20000, 2);
-  const dense = crossLines(target, [-600, -300, 0, 300, 600], 2500, 2);
+  const wide = crossLines(aim, [-4000, -2000, 0, 2000, 4000], 20000, 2);
+  const dense = crossLines(aim, [-450, -300, -150, 0, 150, 300, 450], 2500, 2);
+  const sight = crossLines(aim, [0], 1000, 2, 'along');
   try {
     const parts = await Promise.all([
       ...wide.map(([a, b]) => alongPath(svc, a, b, 512)),
       ...dense.map(([a, b]) => alongPath(svc, a, b, 512)),
+      ...sight.map(([a, b]) => alongPath(svc, a, b, 256)),
     ]);
-    const sightline = await alongPath(svc, obs, FUJI, 512);
+    const sightline = await alongPath(svc, obs, FUJI_CENTER, 512);
     const out = { ridge: parts, sightline };
     cache.set(k, out);
     return out;
