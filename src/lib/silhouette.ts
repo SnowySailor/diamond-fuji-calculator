@@ -164,34 +164,3 @@ export function defaultTarget(obs: Place): Target {
   const aim = aimTarget(obs);
   return settleTarget(aim, modelSilhouette(obs, aim)).target;
 }
-
-/** Radius around the crater centre treated as "the summit" (covers the ~780 m crater). */
-export const SUMMIT_ZONE_M = 1000;
-
-export interface LineOfSight {
-  clear: boolean;
-  /** Summit altitude minus the highest obstruction's altitude, degrees. */
-  marginDeg: number;
-  worst?: Place & { distanceKm: number };
-}
-
-/**
- * Whether terrain sampled along the observer→summit path hides the summit.
- * Ignores the first 300 m (the observer's own ground) and the last 1 km: that is
- * Fuji's own crater rim, where the sun actually sits, so it isn't an obstruction.
- */
-export function lineOfSight(obs: Place, target: Target, samples: Place[]): LineOfSight {
-  let maxAlt = -Infinity;
-  let worst: LineOfSight['worst'];
-  for (const s of samples) {
-    const p = pointAzAlt(obs, s);
-    if (p.distance < 300 || target.distance - p.distance < SUMMIT_ZONE_M) continue;
-    if (p.alt > maxAlt) {
-      maxAlt = p.alt;
-      worst = { ...s, distanceKm: p.distance / 1000 };
-    }
-  }
-  if (!worst) return { clear: true, marginDeg: Infinity };
-  const marginDeg = target.alt - maxAlt;
-  return { clear: marginDeg > 0, marginDeg, worst };
-}

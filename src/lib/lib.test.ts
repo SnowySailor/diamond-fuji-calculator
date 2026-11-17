@@ -3,7 +3,7 @@ import { FUJI, type Place } from './constants';
 import { inverse, pointAzAlt } from './geo';
 import { bodyPosition, searchAltitude, makeObserver } from './astro';
 import { computeYear, jstMidnight, seasons } from './events';
-import { defaultTarget, lineOfSight, modelSilhouette, ridgeAt, settleTarget } from './silhouette';
+import { defaultTarget, modelSilhouette, ridgeAt, settleTarget } from './silhouette';
 import { aimTarget, skyOffset } from './sky';
 
 const TOKYO_STATION: Place = { lat: 35.6812, lng: 139.7671, elev: 3 };
@@ -124,22 +124,6 @@ describe('silhouette', () => {
     expect(ken.x).toBeLessThan(-0.05);
     expect(Math.abs(top.x - ken.x)).toBeLessThan(0.03);
     expect(top.y).toBeGreaterThan(0);
-  });
-
-  it('line of sight flags a blocking ridge', () => {
-    const t = defaultTarget(TOKYO_STATION);
-    const mid = { lat: 35.52, lng: 139.25, elev: 5000 };
-    expect(lineOfSight(TOKYO_STATION, t, [mid]).clear).toBe(false);
-    expect(lineOfSight(TOKYO_STATION, t, [{ ...mid, elev: 100 }]).clear).toBe(true);
-  });
-
-  it("doesn't treat Fuji's own near crater rim as an obstruction", () => {
-    // Panorama-dai, 17.5 km out: Google terrain has the near rim (3689 m) in front of
-    // Kengamine, appearing above it. That's the summit, not a blocker.
-    const pano: Place = { lat: 35.4126, lng: 138.9095, elev: 1094.6 };
-    const t = defaultTarget(pano);
-    const rim = { lat: 35.36257, lng: 138.73225, elev: 3689 };
-    expect(lineOfSight(pano, t, [rim]).clear).toBe(true);
   });
 });
 

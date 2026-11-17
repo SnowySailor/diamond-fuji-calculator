@@ -1,5 +1,4 @@
 import type { LatLng, Place } from '../lib/constants';
-import { FUJI_CENTER } from '../lib/constants';
 import type { Target } from '../lib/sky';
 import { crossLines } from '../lib/silhouette';
 
@@ -7,7 +6,7 @@ import { crossLines } from '../lib/silhouette';
  * Thin wrapper over google.maps.ElevationService. Every call resolves to null
  * when the Elevation API is unavailable (key not allowed to call it, quota,
  * offline). After a REQUEST_DENIED we pause for a short while instead of firing
- * the 11 terrain requests that would fail too, then try again, so fixing the
+ * the 13 terrain requests that would fail too, then try again, so fixing the
  * key in the Cloud console takes effect without a reload.
  */
 
@@ -68,12 +67,10 @@ async function alongPath(svc: google.maps.ElevationService, a: LatLng, b: LatLng
 export interface TerrainSamples {
   /** Lines of points across Fuji, for the real skyline. */
   ridge: Place[][];
-  /** Points along the observer → summit line, for the line-of-sight check. */
-  sightline: Place[];
 }
 
 /**
- * Terrain for the visualisation and line-of-sight check: 14 path requests.
+ * Terrain for the visualisation: 13 path requests.
  * Wide lines (±20 km) at 2 km spacing give the flanks; dense lines (±2.5 km) at
  * 150 m spacing across the crater, plus one along the line of sight through it,
  * give the summit's real shape and the rim height in the middle.
@@ -92,8 +89,7 @@ export async function terrainSamples(obs: LatLng, aim: Target): Promise<TerrainS
       ...dense.map(([a, b]) => alongPath(svc, a, b, 512)),
       ...sight.map(([a, b]) => alongPath(svc, a, b, 256)),
     ]);
-    const sightline = await alongPath(svc, obs, FUJI_CENTER, 512);
-    const out = { ridge: parts, sightline };
+    const out = { ridge: parts };
     cache.set(k, out);
     return out;
   } catch (err) {

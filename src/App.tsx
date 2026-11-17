@@ -8,7 +8,7 @@ import type { LatLng, Place } from './lib/constants';
 import type { BodyName } from './lib/astro';
 import { computeYear, seasons, type Alignment } from './lib/events';
 import { aimTarget } from './lib/sky';
-import { lineOfSight, modelSilhouette, projectPlaces, settleTarget, skyline } from './lib/silhouette';
+import { modelSilhouette, projectPlaces, settleTarget, skyline } from './lib/silhouette';
 import { elevationUnavailableReason, groundElevation, terrainSamples, type TerrainSamples } from './maps/elevation';
 
 interface UrlState {
@@ -72,7 +72,6 @@ export default function App() {
   const [selectedKey, setSelectedKey] = useState<number | null>(null);
   const [mapsReady, setMapsReady] = useState(false);
   const [terrain, setTerrain] = useState<TerrainSamples | null>(null);
-  const [terrainStatus, setTerrainStatus] = useState<'loading' | 'ok' | 'unavailable'>('loading');
   const [elevationNote, setElevationNote] = useState<string | null>(null);
 
   const place: Place = useMemo(
@@ -93,7 +92,6 @@ export default function App() {
     const moved = !firstRun;
     setFirstRun(false);
     if (useLookup) setGroundSource('loading');
-    setTerrainStatus('loading');
     const timer = setTimeout(async () => {
       if (useLookup) {
         const g = await groundElevation(observer);
@@ -113,7 +111,6 @@ export default function App() {
       const samples = await terrainSamples(observer, aimTarget({ ...observer, elev: 0 }));
       if (cancelled) return;
       setTerrain(samples);
-      setTerrainStatus(samples ? 'ok' : 'unavailable');
     }, 350);
     return () => {
       cancelled = true;
@@ -127,7 +124,6 @@ export default function App() {
     const t = setTimeout(() => {
       if (!mapsReady) {
         setGroundSource((s) => (s === 'loading' ? 'manual' : s));
-        setTerrainStatus((s) => (s === 'loading' ? 'unavailable' : s));
       }
     }, 8000);
     return () => clearTimeout(t);
@@ -160,11 +156,6 @@ export default function App() {
   }, [selectedKey, result, pool, body]);
 
   const onSelect = useCallback((a: Alignment) => setSelectedKey(a.crossTime.getTime()), []);
-
-  const los = useMemo(
-    () => (terrain ? lineOfSight(deferredPlace, target, terrain.sightline) : null),
-    [terrain, deferredPlace, target],
-  );
 
   const moveObserver = useCallback((p: LatLng) => {
     setObserver({ lat: p.lat, lng: p.lng });
@@ -211,8 +202,6 @@ export default function App() {
               setSelectedKey(null);
             }}
             target={target}
-            los={los}
-            terrainStatus={terrainStatus}
             elevationNote={elevationNote}
           />
         </aside>
@@ -256,8 +245,9 @@ export default function App() {
             The target is the middle of Fuji’s summit: the direction of the crater centre (大内院), at the height of
             the visible ridge. Kengamine, the 3776 m high point (GSI), is on the crater’s south-west rim and is marked
             separately. Sun and moon positions come from
-            astronomy-engine, with refraction scaled for your elevation. The line of sight to the summit uses k = 0.13
-            terrestrial refraction. Buildings, trees and the weather aren’t modelled. Real refraction near the horizon varies
+            astronomy-engine, with refraction scaled for your elevation. The summit’s position allows for Earth’s
+            curvature and k = 0.13 terrestrial refraction. Nothing checks whether hills, buildings or trees in between
+            block your view, and the weather isn’t modelled. Real refraction near the horizon varies
             from day to day, so expect up to a minute either way.
           </p>
         </section>

@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { LatLng } from '../lib/constants';
 import type { Target } from '../lib/events';
-import type { LineOfSight } from '../lib/silhouette';
 import type { BodyName } from '../lib/astro';
 
 export type ElevSource = 'google' | 'manual' | 'loading';
@@ -21,8 +20,6 @@ interface Props {
   minIllum: number;
   onMinIllum: (v: number) => void;
   target: Target;
-  los: LineOfSight | null;
-  terrainStatus: 'loading' | 'ok' | 'unavailable';
   elevationNote: string | null;
 }
 
@@ -66,30 +63,6 @@ function NumberField(props: {
 }
 
 export function Controls(p: Props) {
-  const losText = (() => {
-    if (p.terrainStatus === 'loading') return <span className="muted">Checking terrain…</span>;
-    if (!p.los)
-      return (
-        <span className="muted">
-          Not checked. The key isn’t allowed to call the Elevation API (Cloud console → Credentials → this key → API
-          restrictions).
-        </span>
-      );
-    if (p.los.clear)
-      return (
-        <span className="ok">
-          Clear: summit {p.los.marginDeg === Infinity ? '' : `${(p.los.marginDeg * 60).toFixed(0)}′ `}above the terrain in between
-        </span>
-      );
-    const w = p.los.worst!;
-    return (
-      <span className="warn">
-        Blocked by terrain {w.distanceKm.toFixed(1)} km away ({Math.round(w.elev)} m), {(-p.los.marginDeg * 60).toFixed(0)}′
-        above the summit
-      </span>
-    );
-  })();
-
   return (
     <div className="controls">
       <div className="tabs" role="tablist">
@@ -157,10 +130,6 @@ export function Controls(p: Props) {
           <dd>
             {p.target.alt.toFixed(3)}° altitude
           </dd>
-        </div>
-        <div className="wide">
-          <dt>Line of sight</dt>
-          <dd>{losText}</dd>
         </div>
       </dl>
       {p.target.distance > 330_000 && (

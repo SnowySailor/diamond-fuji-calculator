@@ -27,11 +27,10 @@ docker compose up --build app     # http://127.0.0.1:4778
 ```
 
 The key needs **Maps JavaScript API** enabled, with `http://127.0.0.1:4778/*` as an allowed referrer.
-Enabling the **Elevation API** on the same key turns on three features:
+Enabling the **Elevation API** on the same key turns on two features:
 
 - ground elevation fills in automatically when you click the map
-- Fuji's real ridge line, built from 10 terrain cross-sections, replaces the modelled cone
-- a line-of-sight check tells you whether hills in between hide the summit
+- Fuji's real ridge line, built from 13 terrain cross-sections, replaces the modelled cone
 
 Without it, you type the elevation and the app draws the modelled profile.
 
@@ -75,7 +74,7 @@ docker compose --env-file .env.local --profile prod up --build prod   # nginx bu
   - Den-en-chōfu (MLIT Kanto, Feb 17–18) comes out on Feb 15 at the station. MLIT's coordinates for that
     neighbourhood were placed by eye.
 
-Not modelled: buildings, trees, weather, or the day-to-day variation in refraction near the horizon.
+Not modelled: whether hills, buildings or trees between you and Fuji block the view, weather, or the day-to-day variation in refraction near the horizon.
 Expect timing to be off by up to a minute either way.
 
 From close range (Lake Yamanaka, for example), the crater's near rim stands higher in the sky than
