@@ -1,4 +1,4 @@
-# Everything (deps, dev server, tests, build) runs in here; nothing is installed on the host.
+# Dev server, tests and builds run in here. Only deploying runs on the host (README → Deploy).
 
 FROM node:22-alpine AS deps
 WORKDIR /app

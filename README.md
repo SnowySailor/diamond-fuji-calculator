@@ -43,6 +43,27 @@ docker compose run --rm app npm run typecheck
 docker compose --env-file .env.local --profile prod up --build prod   # nginx build on :4778
 ```
 
+## Deploy (Cloudflare Workers)
+
+The site is static: Workers static assets serve `dist/` (`wrangler.jsonc`), with no Worker code.
+Deploying is the one thing that runs on the host, not in Docker, so wrangler can use your normal
+browser login.
+
+1. Create a second Maps key for production. Restrict it to your Worker's URL as the only referrer
+   (`https://<worker>.<subdomain>.workers.dev/*`) and to the Maps JavaScript API and Elevation API.
+   Put it in `.env.production.local` (git-ignored) as `VITE_GOOGLE_MAPS_API_KEY=…`. The deploy
+   refuses to run without it, so the dev key never ships.
+2. Deploy from the host:
+
+   ```sh
+   npm install            # once; host node_modules, separate from the container's
+   npx wrangler login     # once
+   npm run deploy         # build + wrangler deploy
+   ```
+
+A key in a web page is always readable. The referrer restriction stops other sites from using it, but
+a script can fake the Referer header, so set daily quotas on both APIs to cap what misuse could cost.
+
 ## How it works (`src/lib`)
 
 - **What counts as "on the summit".** Diamond Fuji is the sun sitting in the *middle* of the summit (MLIT
