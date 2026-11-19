@@ -279,7 +279,7 @@ export function AlignmentView({ place, target, event, silhouette, ridgeSource }:
         </g>
 
         <text className="scene-note" x={W - 12} y={H - 14} textAnchor="end">
-          {ridgeSource === 'terrain' ? 'ridge from Google terrain data' : 'modelled ridge (no terrain data)'}
+          {ridgeSource === 'terrain' ? 'ridge from GSI terrain data' : 'modelled ridge (no terrain data)'}
         </text>
       </svg>
 

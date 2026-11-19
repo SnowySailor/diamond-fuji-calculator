@@ -9,7 +9,7 @@ import type { BodyName } from './lib/astro';
 import { computeYear, seasons, type Alignment } from './lib/events';
 import { aimTarget } from './lib/sky';
 import { modelSilhouette, projectPlaces, settleTarget, skyline } from './lib/silhouette';
-import { elevationUnavailableReason, groundElevation, terrainSamples, type TerrainSamples } from './maps/elevation';
+import { groundElevation, terrainSamples, type TerrainSamples } from './maps/elevation';
 
 interface UrlState {
   observer: LatLng;
@@ -70,7 +70,6 @@ export default function App() {
   const [body, setBody] = useState<BodyName>(initial.body);
   const [minIllum, setMinIllum] = useState(0.9);
   const [selectedKey, setSelectedKey] = useState<number | null>(null);
-  const [mapsReady, setMapsReady] = useState(false);
   const [terrain, setTerrain] = useState<TerrainSamples | null>(null);
   const [elevationNote, setElevationNote] = useState<string | null>(null);
 
@@ -82,11 +81,10 @@ export default function App() {
 
   useEffect(() => writeUrl({ observer, ground, agl, year, body }), [observer, ground, agl, year, body]);
 
-  // Ground elevation + terrain whenever the observer moves (after the map/API is loaded).
+  // Ground elevation + terrain whenever the observer moves.
   const [skipFirstGround] = useState(initial.ground !== null);
   const [firstRun, setFirstRun] = useState(true);
   useEffect(() => {
-    if (!mapsReady) return;
     let cancelled = false;
     const useLookup = !(firstRun && skipFirstGround);
     const moved = !firstRun;
@@ -97,18 +95,17 @@ export default function App() {
         const g = await groundElevation(observer);
         if (cancelled) return;
         if (g !== null) {
-          setGround(Math.round(g));
-          setGroundSource('google');
+          setGround(Math.round(g.elev));
+          setGroundSource(g.sea ? 'sea' : 'gsi');
         } else {
           setGroundSource('manual');
           // Say plainly that the number shown belongs to the previous spot.
           setElevationNote(
-            (elevationUnavailableReason() ? 'Elevation API refused. ' : 'Lookup failed. ') +
-              (moved ? 'Still showing the previous spot’s value, so enter yours.' : 'Enter it yourself.'),
+            'Lookup failed. ' + (moved ? 'Still showing the previous spot’s value, so enter yours.' : 'Enter it yourself.'),
           );
         }
       }
-      const samples = await terrainSamples(observer, aimTarget({ ...observer, elev: 0 }));
+      const samples = await terrainSamples(aimTarget({ ...observer, elev: 0 }));
       if (cancelled) return;
       setTerrain(samples);
     }, 350);
@@ -117,17 +114,7 @@ export default function App() {
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [observer.lat, observer.lng, mapsReady]);
-
-  // If Maps never loads, stop showing "loading" states.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (!mapsReady) {
-        setGroundSource((s) => (s === 'loading' ? 'manual' : s));
-      }
-    }, 8000);
-    return () => clearTimeout(t);
-  }, [mapsReady]);
+  }, [observer.lat, observer.lng]);
 
   // Aim at the middle of the summit, then settle the target's height onto the
   // skyline in that direction (real terrain when we have it, else the model).
@@ -173,7 +160,7 @@ export default function App() {
 
       <main className="layout">
         <aside className="left">
-          <MapPicker observer={observer} onPick={moveObserver} onReady={() => setMapsReady(true)} />
+          <MapPicker observer={observer} onPick={moveObserver} />
           <Controls
             observer={observer}
             onObserver={moveObserver}

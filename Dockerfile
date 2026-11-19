@@ -12,10 +12,6 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 FROM deps AS build
 COPY . .
-# Vite inlines VITE_* vars into the bundle. A Maps JS key is public by design;
-# keep it restricted by HTTP referrer in the Google Cloud console.
-ARG VITE_GOOGLE_MAPS_API_KEY
-ENV VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY
 RUN npm run build
 
 FROM nginx:1.27-alpine AS prod

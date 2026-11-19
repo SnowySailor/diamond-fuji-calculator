@@ -6,6 +6,5 @@
   "compatibility_date": "2026-11-01",
   "assets": { "directory": "./dist" },
   "workers_dev": true,
-  // The production Maps key only accepts the workers.dev URL, so preview URLs would show no map.
   "preview_urls": false
 }

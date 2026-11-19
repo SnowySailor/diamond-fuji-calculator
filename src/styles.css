@@ -122,6 +122,8 @@ select {
 /* Map */
 .map-wrap {
   position: relative;
+  /* Keep the map's control z-indexes inside it. */
+  isolation: isolate;
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--line);
@@ -129,6 +131,35 @@ select {
 }
 .map {
   height: 380px;
+}
+.map.maplibregl-map {
+  font-family: inherit;
+}
+.map-mode {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+.map-mode button {
+  border: 0;
+  background: transparent;
+  color: #1d2230;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+.map-mode button.on {
+  background: #2b3550;
+  color: #fff;
 }
 .map-error {
   position: absolute;
@@ -141,7 +172,10 @@ select {
   background: var(--panel);
   color: var(--ink);
 }
+/* Clicks pass through the badge to the map. */
 .map-fuji {
+  pointer-events: none;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -152,7 +186,6 @@ select {
   font-size: 12px;
   font-weight: 600;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
-  transform: translateY(50%);
 }
 .map-fuji-tri {
   width: 0;
@@ -162,13 +195,12 @@ select {
   border-bottom: 10px solid #2b3550;
 }
 .map-observer {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--accent);
   border: 3px solid #fff;
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
-  transform: translateY(50%);
   cursor: grab;
 }
 

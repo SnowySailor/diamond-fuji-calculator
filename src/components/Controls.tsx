@@ -3,7 +3,7 @@ import type { LatLng } from '../lib/constants';
 import type { Target } from '../lib/events';
 import type { BodyName } from '../lib/astro';
 
-export type ElevSource = 'google' | 'manual' | 'loading';
+export type ElevSource = 'gsi' | 'sea' | 'manual' | 'loading';
 
 interface Props {
   observer: LatLng;
@@ -86,8 +86,10 @@ export function Controls(p: Props) {
           hint={
             p.groundSource === 'loading' ? (
               'Looking up…'
-            ) : p.groundSource === 'google' ? (
-              'From Google terrain'
+            ) : p.groundSource === 'gsi' ? (
+              'From GSI terrain data'
+            ) : p.groundSource === 'sea' ? (
+              'Sea level: GSI has no land data here'
             ) : p.elevationNote ? (
               <span className="warn">{p.elevationNote}</span>
             ) : (

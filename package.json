@@ -9,16 +9,16 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "deploy": "node scripts/check-prod-key.mjs && npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "astronomy-engine": "^2.1.19",
     "geographiclib-geodesic": "^2.1.1",
+    "maplibre-gl": "^6.19.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@types/google.maps": "^3.58.1",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.0",
